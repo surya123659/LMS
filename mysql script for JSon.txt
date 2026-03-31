@@ -1,0 +1,241 @@
+---- MySQL Workbench  SQL Script
+----DATABASE CREATION
+CREATE DATABASE IF NOT EXISTS  learning_portal
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE learning_portal;
+--- Schema Creation---
+create schema lms_test
+
+-- ─── USERS ───────────────────────────────────────────────────────────────────
+CREATE TABLE lms_test.users (
+    user_id      INT AUTO_INCREMENT PRIMARY KEY,
+    username     VARCHAR(50)  UNIQUE NOT NULL,
+    email        VARCHAR(120) UNIQUE NOT NULL,
+    password_hash VARCHAR(256) NOT NULL,
+    role         ENUM('student','instructor','admin') DEFAULT 'student',
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-----Json table for the SQL Table
+
+{
+  "users": {
+    "user_id": "INT (PK, AUTO_INCREMENT)",
+    "username": "VARCHAR(50), UNIQUE, NOT NULL",
+    "email": "VARCHAR(120), UNIQUE, NOT NULL",
+    "password_hash": "VARCHAR(256), NOT NULL",
+    "role": "ENUM(student, instructor, admin)",
+    "created_at": "DATETIME",
+    "updated_at": "DATETIME"
+  }
+
+-- ─── COURSES ─────────────────────────────────────────────────────────────────
+CREATE TABLE lms_test.courses (
+    course_id     INT AUTO_INCREMENT PRIMARY KEY,
+    title         VARCHAR(200) NOT NULL,
+    description   TEXT,
+    price_1month         DECIMAL(8,2) DEFAULT 0.00,
+    price_3months     DECIMAL(8,2),
+    price_6months     DECIMAL(8,2),
+    createdAt    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-----Json table format for SQL table ----------------------------------------
+
+  "courses": {
+    "course_id": "INT (PK, AUTO_INCREMENT)",
+    "title": "VARCHAR(200), NOT NULL",
+    "description": "TEXT",
+    "price_1month": "DECIMAL(8,2)",
+    "price_3months": "DECIMAL(8,2)",
+    "price_6months": "DECIMAL(8,2)",
+    "createdAt": "DATETIME",
+    "updatedAt": "DATETIME"
+  }
+
+
+---__________MODULE____________________________________________
+CREATE TABLE lms_test.module (
+    module_id   INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL,
+    title    VARCHAR(100) NOT NULL,
+    order    INT NOT NULL,
+    completedAt  DATETIME,
+    createdAt     DATETIME,
+    updatedAt  DATETIME,
+    UNIQUE KEY uq_progress (module_id),
+    FOREIGN KEY (course_id)   REFERENCES lms_test.users(course_id)   ON DELETE CASCADE
+);
+
+------ Json table format for SQL table-------------------------------------
+"module": {
+    "module_id": "INT (PK, AUTO_INCREMENT)",
+    "course_id": "INT (FK -> courses.course_id)",
+    "title": "VARCHAR(100)",
+    "order": "INT",
+    "completedAt": "DATETIME",
+    "createdAt": "DATETIME",
+    "updatedAt": "DATETIME"
+  }
+
+---__________________ SUBSCRIPTIONS____________________________________________
+
+CREATE TABLE lms_test.subscriptions (
+    subscriptions_id    INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT NOT NULL,
+    course_id  INT NOT NULL,
+    plan       VARCHAR(200) NOT NULL,
+    startDate  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    endDate  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status    TEXT,
+    amount      INT
+    createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt    DATETIME DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (course_id) REFERENCES lms_test.courses(course_id) ON DELETE CASCADE,
+   FOREGIN KEY (user_id) REFERENCES lms_test.users(user_id) ON DELETE  CASCADE
+);
+
+-----Json table format for SQL  table format----------------------------------
+  "subscriptions": {
+    "subscriptions_id": "INT (PK)",
+    "user_id": "INT (FK -> users.user_id)",
+    "course_id": "INT (FK -> courses.course_id)",
+    "plan": "VARCHAR(200)",
+    "startDate": "DATETIME",
+    "endDate": "DATETIME",
+    "status": "TEXT",
+    "amount": "INT"
+  }
+
+
+
+-- ─── LESSONS ─────────────────────────────────────────────────────────────────
+CREATE TABLE lms_test.lessons (
+    lesson_id    INT AUTO_INCREMENT PRIMARY KEY,
+    module_id    INT NOT NULL,
+    title        VARCHAR(200) NOT NULL,
+    videourl    TEXT,
+    pdfurl      TEXT,
+    order    INT,
+    duration    INT DEFAULT 0,
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt    DATETIME DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (module_id) REFERENCES lms_test.module(module_id) ON DELETE CASCADE,
+    FOREIGN KEY (order_id) REFERENCES lms_test.module(order_id) ON DELETE CASCADE
+);
+--------Json table format for SQL TABLE---------------------------------------
+
+  "lessons": {
+    "lesson_id": "INT (PK, AUTO_INCREMENT)",
+    "module_id": "INT (FK -> module.module_id)",
+    "title": "VARCHAR(200)",
+    "videourl": "TEXT",
+    "pdfurl": "TEXT",
+    "order": "INT",
+    "duration": "INT"
+  }
+
+-- ─── PROGRESS ────────────────────────────────────────────────────────────────
+CREATE TABLE lms_test.progress (
+    progress_id   INT AUTO_INCREMENT PRIMARY KEY,
+    userid INT NOT NULL,
+    lessonid     INT NOT NULL,
+    completed  TINYINT(1) DEFAULT 0,
+    completedAt  DATETIME,
+    createdAt     DATETIME,
+    updatedAt  DATETIME,
+    UNIQUE KEY uq_progress (enrollment_id, lesson_id),
+    FOREIGN KEY (user_id)   REFERENCES lms_test.users(user_id)   ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id)  REFERENCES lms_test.lessons(lesson_id)  ON DELETE CASCADE
+);
+-----Json table format for the SQL Table-----------------------------------------------------
+
+  "progress": {
+    "progress_id": "INT (PK)",
+    "user_id": "INT (FK -> users.user_id)",
+    "lesson_id": "INT (FK -> lessons.lesson_id)",
+    "completed": "BOOLEAN",
+    "completedAt": "DATETIME",
+    "updatedAt" : "DATETIME"
+  }
+
+
+CREATE TABLE lms_test.ERROR_LOG(MODULE_NAME VARCHAR2 (15),ERROR_DATE DATE,ERROR_NO VARCHAR2 (10),ERROR_MSG VARCHAR2 (525),
+ROW_NUMBER NUMBER) TABLESPACE TABLESPACE_NAME;
+
+
+
+---- sequences
+CREATE SEQUENCE lms_test.seq_users START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE lms_test.seq_courses START WITH 101 INCREMENT BY 1;
+CREATE SEQUENCE lms_test.seq_subscriptions START WITH 1001 INCREMENT BY 1;
+CREATE SEQUENCE lms_test.seq_lessons START WITH 5001 INCREMENT BY 1;
+CREATE SEQUENCE lms_test.seq_module START WITH 201 INCREMENT BY 1;
+CREATE SEQUENCE lms_test.seq_progress START WITH 3001 INCREMENT BY 1;
+
+
+
+
+
+------ json format for the above  for all  sql tables
+
+{
+  "users": {
+    "user_id": "INT (PK, AUTO_INCREMENT)",
+    "username": "VARCHAR(50), UNIQUE, NOT NULL",
+    "email": "VARCHAR(120), UNIQUE, NOT NULL",
+    "password_hash": "VARCHAR(256), NOT NULL",
+    "role": "ENUM(student, instructor, admin)",
+    "created_at": "DATETIME",
+    "updated_at": "DATETIME"
+  },
+  "courses": {
+    "course_id": "INT (PK, AUTO_INCREMENT)",
+    "title": "VARCHAR(200), NOT NULL",
+    "description": "TEXT",
+    "price_1month": "DECIMAL(8,2)",
+    "price_3months": "DECIMAL(8,2)",
+    "price_6months": "DECIMAL(8,2)",
+    "createdAt": "DATETIME",
+    "updatedAt": "DATETIME"
+  },
+  "module": {
+    "module_id": "INT (PK, AUTO_INCREMENT)",
+    "course_id": "INT (FK -> courses.course_id)",
+    "title": "VARCHAR(100)",
+    "order": "INT",
+    "completedAt": "DATETIME",
+    "createdAt": "DATETIME",
+    "updatedAt": "DATETIME"
+  },
+  "lessons": {
+    "lesson_id": "INT (PK, AUTO_INCREMENT)",
+    "module_id": "INT (FK -> module.module_id)",
+    "title": "VARCHAR(200)",
+    "videourl": "TEXT",
+    "pdfurl": "TEXT",
+    "order": "INT",
+    "duration": "INT"
+  },
+  "subscriptions": {
+    "subscriptions_id": "INT (PK)",
+    "user_id": "INT (FK -> users.user_id)",
+    "course_id": "INT (FK -> courses.course_id)",
+    "plan": "VARCHAR(200)",
+    "startDate": "DATETIME",
+    "endDate": "DATETIME",
+    "status": "TEXT",
+    "amount": "INT"
+  },
+  "progress": {
+    "progress_id": "INT (PK)",
+    "user_id": "INT (FK -> users.user_id)",
+    "lesson_id": "INT (FK -> lessons.lesson_id)",
+    "completed": "BOOLEAN",
+    "completedAt": "DATETIME"
+  }
+}
